@@ -22,6 +22,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Make sure the Next.js standalone output is enabled
+ENV NEXT_STANDALONE=true 
 RUN pnpm build
 
 # production image
@@ -41,10 +43,11 @@ ENV TZ=UTC
 RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone
 
-# copy built application
+# Copy the entire .next directory instead of specific subdirectories
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # create user for running the application
 RUN addgroup --system --gid 1001 nodejs && \
@@ -55,5 +58,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# run the application with pnpm
-CMD ["pnpm", "start"]
+# Direct command to run Next.js without relying on the start script
+CMD ["node", ".next/server/app/server.js"]
