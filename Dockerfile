@@ -48,7 +48,8 @@ RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime \
 
 # Install only production dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --frozen-lockfile && \
+    pnpm add code-inspector-plugin
 
 # Copy built application and necessary files
 COPY --from=builder /app/.next ./.next
