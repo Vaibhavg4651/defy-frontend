@@ -21,9 +21,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Ensure next.config.js has output: 'standalone' set
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-# Make sure the Next.js standalone output is enabled
-ENV NEXT_STANDALONE=true 
 RUN pnpm build
 
 # production image
@@ -37,17 +36,25 @@ ENV NEXT_PUBLIC_API_PREFIX=${CONSOLE_API_URL:-http://localhost:5001/console/api}
 ENV NEXT_PUBLIC_PUBLIC_API_PREFIX=${APP_API_URL:-http://localhost:5001/api}
 ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOST=0.0.0.0
 
 # set timezone
 ENV TZ=UTC
 RUN ln -s /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo ${TZ} > /etc/timezone
 
-# Copy the entire .next directory instead of specific subdirectories
+# Install only production dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --prod --frozen-lockfile
+
+# Copy built application and necessary files
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.js ./
+
+# Create our own simplified start script
+RUN echo '#!/bin/sh\nnode_modules/.bin/next start -p ${PORT:-3000} -H ${HOST:-0.0.0.0}' > ./start.sh && \
+    chmod +x ./start.sh
 
 # create user for running the application
 RUN addgroup --system --gid 1001 nodejs && \
@@ -58,5 +65,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# Direct command to run Next.js without relying on the start script
-CMD ["node", ".next/server/app/server.js"]
+# Run our custom start script
+CMD ["./start.sh"]
