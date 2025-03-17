@@ -21,7 +21,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Ensure next.config.js has output: 'standalone' set
+# Build the Next.js application
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN pnpm build
 
@@ -52,10 +52,6 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./
 
-# Create our own simplified start script
-RUN echo '#!/bin/sh\nnode_modules/.bin/next start -p ${PORT:-3000} -H ${HOST:-0.0.0.0}' > ./start.sh && \
-    chmod +x ./start.sh
-
 # create user for running the application
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
@@ -65,5 +61,5 @@ USER nextjs
 
 EXPOSE 3000
 
-# Run our custom start script
-CMD ["./start.sh"]
+# Directly use next start command without a separate script
+CMD ["node_modules/.bin/next", "start", "-p", "3000", "-H", "0.0.0.0"]
