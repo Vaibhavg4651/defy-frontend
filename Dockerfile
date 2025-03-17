@@ -30,13 +30,15 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_EDITION=SELF_HOSTED
-ENV NEXT_PUBLIC_DEPLOY_ENV=PRODUCTION
-ENV NEXT_PUBLIC_API_PREFIX=${CONSOLE_API_URL:-http://localhost:5001/console/api}
-ENV NEXT_PUBLIC_PUBLIC_API_PREFIX=${APP_API_URL:-http://localhost:5001/api}
+ENV EDITION=SELF_HOSTED
+ENV DEPLOY_ENV=PRODUCTION
+ENV CONSOLE_API_URL=http://localhost:5001
+ENV APP_API_URL=http://localhost:5001
+ENV MARKETPLACE_API_URL=http://localhost:5001
+ENV MARKETPLACE_URL=http://localhost:5001
 ENV PORT=3000
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOST=0.0.0.0
+ENV PM2_INSTANCES=2
 
 # set timezone
 ENV TZ=UTC
@@ -50,7 +52,7 @@ RUN pnpm install --prod --frozen-lockfile
 # Copy built application and necessary files
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/next.config.js ./next.config.js
 
 # create user for running the application
 RUN addgroup --system --gid 1001 nodejs && \
