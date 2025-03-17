@@ -66,4 +66,4 @@ USER nextjs
 EXPOSE 3000
 
 # Directly use next start command without a separate script
-CMD ["node_modules/.bin/next", "start", "-p", "3000", "-H", "0.0.0.0"]
+CMD ["pnpm", "dev"]
